@@ -3,24 +3,24 @@
 import { useState, useEffect, useRef } from "react";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "firebase/auth";
 import { doc, onSnapshot, collection, addDoc, serverTimestamp } from "firebase/firestore";
-// KONEKSI ASLI DARI LAPTOP ANDA
-import { app, db } from "../../lib/firebase"; 
+// KONEKSI ASLI DARI PROYEK ANDA
+import { app, db } from "../../lib/firebase";
 
 export default function TemaSatuBaruPage() {
-  // --- STATE MANAJEMEN ---
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  
+
   // Audio & UI
   const [isMuted, setIsMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [namaTamu, setNamaTamu] = useState("Tamu Kehormatan");
-  
-  // Data Master
+
+  // State Data Master
   const [dataMempelai, setDataMempelai] = useState<any>(null);
   const [dataAcara, setDataAcara] = useState<any>(null);
   const [dataGaleri, setDataGaleri] = useState<any>(null);
+  const [dataKado, setDataKado] = useState<any>(null);
 
   // Fitur
   const [timeLeft, setTimeLeft] = useState({ hari: 0, jam: 0, menit: 0, detik: 0 });
@@ -29,6 +29,7 @@ export default function TemaSatuBaruPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- FUNGSI PENDUKUNG ---
+  // Fix Google Drive Images
   const fixGdriveLink = (url: any): string => {
     if (!url || typeof url !== 'string') return "";
     if (url.includes("drive.google.com")) {
@@ -38,6 +39,7 @@ export default function TemaSatuBaruPage() {
     return url;
   };
 
+  // Fungsi Copy Clipboard
   const copyToClipboard = (text: string) => {
     const textarea = document.createElement('textarea');
     textarea.value = text;
@@ -48,7 +50,7 @@ export default function TemaSatuBaruPage() {
     alert(`Berhasil disalin: ${text}`);
   };
 
-  // Ambil Nama Tamu
+  // Ambil Nama Tamu dari URL
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -63,7 +65,7 @@ export default function TemaSatuBaruPage() {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (!currentUser) {
-         signInAnonymously(auth).catch(err => console.error("Gagal login anonim", err));
+        signInAnonymously(auth).catch(err => console.error("Gagal login anonim", err));
       }
     });
     return () => unsubscribe();
@@ -72,15 +74,17 @@ export default function TemaSatuBaruPage() {
   useEffect(() => {
     if (!user) return;
 
-    // Mengambil data sesuai struktur Dashboard Anda
+    // Mengambil data dari koleksi users
     const mRef = doc(db, 'users', user.uid, 'dataPernikahan', 'mempelai');
     const aRef = doc(db, 'users', user.uid, 'dataPernikahan', 'acara');
     const gRef = doc(db, 'users', user.uid, 'dataPernikahan', 'galeri');
+    const kRef = doc(db, 'users', user.uid, 'dataPernikahan', 'kado');
 
     const unsubM = onSnapshot(mRef, (snap) => snap.exists() && setDataMempelai(snap.data()));
     const unsubA = onSnapshot(aRef, (snap) => snap.exists() && setDataAcara(snap.data()));
+    const unsubK = onSnapshot(kRef, (snap) => snap.exists() && setDataKado(snap.data()));
     const unsubG = onSnapshot(gRef, (snap) => {
-      if(snap.exists()) setDataGaleri(snap.data());
+      if (snap.exists()) setDataGaleri(snap.data());
       setLoading(false);
     }, () => setLoading(false));
 
@@ -93,7 +97,7 @@ export default function TemaSatuBaruPage() {
       setUcapanList(data);
     });
 
-    return () => { unsubM(); unsubA(); unsubG(); unsubUcapan(); };
+    return () => { unsubM(); unsubA(); unsubG(); unsubK(); unsubUcapan(); };
   }, [user]);
 
   // --- LOGIKA COUNTDOWN ---
@@ -118,7 +122,7 @@ export default function TemaSatuBaruPage() {
   // --- HANDLER INTERAKSI ---
   const handleOpen = () => {
     setIsOpen(true);
-    if (audioRef.current) audioRef.current.play().catch(() => {});
+    if (audioRef.current) audioRef.current.play().catch(() => { });
   };
 
   const submitRSVP = async (e: React.FormEvent) => {
@@ -169,6 +173,11 @@ export default function TemaSatuBaruPage() {
     waktu: String(dataAcara?.resepsi?.waktu || "11:00"),
     lokasi: String(dataAcara?.resepsi?.lokasi || "Grand Ballroom Hotel")
   };
+  
+  // Data Kado (Amplop Digital)
+  const r1 = dataKado?.rekening1 || { bank: "BCA", noRekening: "1234567890", atasNama: p.lengkap };
+  const r2 = dataKado?.rekening2 || { bank: "MANDIRI", noRekening: "0987654321", atasNama: w.lengkap };
+
   const fotoUtama = fixGdriveLink(dataGaleri?.fotoUtama) || "https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80";
 
   // =========================================================================
@@ -177,11 +186,9 @@ export default function TemaSatuBaruPage() {
   if (!isOpen) {
     return (
       <div className="relative h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-slate-950">
-        {/* Latar Belakang Elegan */}
         <div className="absolute inset-0 bg-cover bg-center opacity-30 scale-105" style={{ backgroundImage: `url('${fotoUtama}')` }}></div>
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/60 to-slate-950"></div>
-        
-        {/* Ornamen Bunga Emas (SVG) */}
+
         <svg className="absolute top-10 right-10 w-32 h-32 text-amber-500/30 opacity-50" viewBox="0 0 100 100" fill="currentColor">
           <path d="M50 0 C60 30 90 40 100 50 C90 60 60 70 50 100 C40 70 10 60 0 50 C10 40 40 30 50 0 Z" />
         </svg>
@@ -191,17 +198,17 @@ export default function TemaSatuBaruPage() {
 
         <div className="relative z-10 text-center px-6 flex flex-col items-center">
           <p className="text-amber-300/80 tracking-[0.4em] text-xs uppercase mb-6 font-light">The Wedding Celebration Of</p>
-          
+
           <h1 className="text-6xl md:text-8xl font-serif text-amber-50 mb-4 drop-shadow-xl" style={{ textShadow: "0 2px 15px rgba(251, 191, 36, 0.2)" }}>
             {w.panggilan} & {p.panggilan}
           </h1>
-          
+
           <div className="w-24 h-[1px] bg-amber-400/50 my-6"></div>
-          
+
           <p className="text-slate-200 font-light tracking-widest text-lg uppercase mb-12">
             {new Date(akad.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
           </p>
-          
+
           <div className="bg-slate-900/50 backdrop-blur-md border border-amber-500/30 rounded-lg p-6 mb-10 w-full max-w-sm shadow-[0_0_30px_rgba(0,0,0,0.5)]">
             <p className="text-slate-400 text-xs uppercase tracking-widest mb-3">Dear, Mr/Mrs/Ms</p>
             <p className="text-amber-100 text-xl font-serif">{namaTamu}</p>
@@ -221,15 +228,15 @@ export default function TemaSatuBaruPage() {
   // =========================================================================
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-amber-200 selection:text-slate-900">
-      
+
       {/* Musik Kontrol */}
       <audio ref={audioRef} src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop />
       <button onClick={() => {
-          if (audioRef.current) {
-            isMuted ? audioRef.current.play() : audioRef.current.pause();
-            setIsMuted(!isMuted);
-          }
-        }} 
+        if (audioRef.current) {
+          isMuted ? audioRef.current.play() : audioRef.current.pause();
+          setIsMuted(!isMuted);
+        }
+      }}
         className="fixed bottom-6 right-6 z-50 bg-slate-900 text-amber-400 p-4 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.3)] border border-amber-500/20 hover:scale-110 transition-transform"
       >
         {isMuted ? "🔇" : "🎵"}
@@ -237,7 +244,7 @@ export default function TemaSatuBaruPage() {
 
       {/* 1. INTRO (Ayat Suci / Quote) */}
       <section className="py-32 px-6 text-center bg-slate-950 text-slate-200 relative overflow-hidden">
-        <svg className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-64 text-slate-800 opacity-30" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 0 Q50 100 100 0 Z" fill="currentColor"/></svg>
+        <svg className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-2xl h-64 text-slate-800 opacity-30" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 0 Q50 100 100 0 Z" fill="currentColor" /></svg>
         <div className="max-w-2xl mx-auto relative z-10 mt-10">
           <p className="text-amber-500 font-serif text-3xl mb-8">﷽</p>
           <p className="leading-relaxed font-light text-lg italic text-slate-300">
@@ -247,7 +254,7 @@ export default function TemaSatuBaruPage() {
         </div>
       </section>
 
-      {/* 2. PROFIL MEMPELAI (Desain Arch / Melengkung Emas) */}
+      {/* 2. PROFIL MEMPELAI */}
       <section className="py-32 px-6 bg-slate-50 relative">
         <div className="text-center mb-20">
           <h2 className="text-4xl md:text-5xl font-serif text-slate-900 mb-4">Groom & Bride</h2>
@@ -262,7 +269,7 @@ export default function TemaSatuBaruPage() {
             </div>
             <h3 className="text-3xl font-serif text-slate-900 mb-2">{w.lengkap}</h3>
             <p className="text-amber-600 text-xs uppercase tracking-widest mb-3 font-bold">The Bride</p>
-            <p className="text-slate-500 font-light text-sm">Putri dari<br/>Bpk. {w.ayah} & Ibu {w.ibu}</p>
+            <p className="text-slate-500 font-light text-sm">Putri dari<br />Bpk. {w.ayah} & Ibu {w.ibu}</p>
           </div>
 
           {/* Pemisah (Simbol &) */}
@@ -272,25 +279,25 @@ export default function TemaSatuBaruPage() {
 
           {/* Mempelai Pria */}
           <div className="flex flex-col items-center group">
-             <div className="w-64 h-80 rounded-t-[100px] rounded-b-md overflow-hidden p-2 border border-amber-200 bg-white shadow-xl mb-8 transform transition-transform duration-700 group-hover:-translate-y-2">
+            <div className="w-64 h-80 rounded-t-[100px] rounded-b-md overflow-hidden p-2 border border-amber-200 bg-white shadow-xl mb-8 transform transition-transform duration-700 group-hover:-translate-y-2">
               <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80" className="w-full h-full object-cover rounded-t-[90px] rounded-b-sm" alt="Groom" />
             </div>
             <h3 className="text-3xl font-serif text-slate-900 mb-2">{p.lengkap}</h3>
             <p className="text-amber-600 text-xs uppercase tracking-widest mb-3 font-bold">The Groom</p>
-            <p className="text-slate-500 font-light text-sm">Putra dari<br/>Bpk. {p.ayah} & Ibu {p.ibu}</p>
+            <p className="text-slate-500 font-light text-sm">Putra dari<br />Bpk. {p.ayah} & Ibu {p.ibu}</p>
           </div>
         </div>
       </section>
 
-      {/* 3. AGENDA & COUNTDOWN (Background Gelap Mewah) */}
+      {/* 3. AGENDA & COUNTDOWN */}
       <section className="py-32 px-6 bg-slate-950 relative text-slate-200">
         <div className="max-w-6xl mx-auto">
-          
+
           {/* Hitung Mundur */}
           <div className="mb-24 text-center">
             <h2 className="text-amber-500 text-sm tracking-[0.4em] uppercase font-bold mb-10">Menuju Hari Bahagia</h2>
             <div className="flex justify-center gap-4 md:gap-10">
-              {[ { l: "Hari", v: timeLeft.hari }, { l: "Jam", v: timeLeft.jam }, { l: "Menit", v: timeLeft.menit }, { l: "Detik", v: timeLeft.detik } ].map((item, i) => (
+              {[{ l: "Hari", v: timeLeft.hari }, { l: "Jam", v: timeLeft.jam }, { l: "Menit", v: timeLeft.menit }, { l: "Detik", v: timeLeft.detik }].map((item, i) => (
                 <div key={i} className="flex flex-col items-center bg-slate-900/50 border border-slate-800 p-4 md:p-6 rounded-lg w-20 md:w-32 shadow-lg">
                   <span className="text-3xl md:text-6xl font-serif text-amber-100">{String(item.v).padStart(2, '0')}</span>
                   <span className="text-[10px] md:text-xs uppercase tracking-[0.2em] text-slate-400 mt-2">{item.l}</span>
@@ -299,12 +306,12 @@ export default function TemaSatuBaruPage() {
             </div>
           </div>
 
-          {/* Detail Acara (Kartu Emas/Biru) */}
+          {/* Detail Acara */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16">
             <div className="bg-slate-900 border border-slate-800 p-10 md:p-16 rounded-tl-[3rem] rounded-br-[3rem] text-center hover:border-amber-500/50 transition-colors">
               <div className="text-amber-500 text-4xl mb-6">💍</div>
               <h3 className="text-3xl font-serif text-amber-100 mb-4">Akad Nikah</h3>
-              <p className="text-slate-400 mb-8">{new Date(akad.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br/>Pukul {akad.waktu} WIB</p>
+              <p className="text-slate-400 mb-8">{new Date(akad.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br />Pukul {akad.waktu} WIB</p>
               <div className="w-12 h-px bg-slate-700 mx-auto mb-8"></div>
               <p className="font-bold tracking-widest uppercase text-sm text-slate-300">{akad.lokasi}</p>
             </div>
@@ -312,7 +319,7 @@ export default function TemaSatuBaruPage() {
             <div className="bg-slate-900 border border-slate-800 p-10 md:p-16 rounded-tr-[3rem] rounded-bl-[3rem] text-center hover:border-amber-500/50 transition-colors">
               <div className="text-amber-500 text-4xl mb-6">🥂</div>
               <h3 className="text-3xl font-serif text-amber-100 mb-4">Resepsi</h3>
-              <p className="text-slate-400 mb-8">{new Date(resepsi.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br/>Pukul {resepsi.waktu} WIB</p>
+              <p className="text-slate-400 mb-8">{new Date(resepsi.tanggal).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br />Pukul {resepsi.waktu} WIB</p>
               <div className="w-12 h-px bg-slate-700 mx-auto mb-8"></div>
               <p className="font-bold tracking-widest uppercase text-sm text-slate-300">{resepsi.lokasi}</p>
             </div>
@@ -328,21 +335,21 @@ export default function TemaSatuBaruPage() {
         </div>
       </section>
 
-      {/* 4. GALERI FOTO (Masonry Grid Mewah) */}
+      {/* 4. GALERI FOTO */}
       <section className="py-32 px-6 bg-slate-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-serif text-slate-900 mb-4">Our Gallery</h2>
             <div className="w-12 h-1 bg-amber-500 mx-auto"></div>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
             <div className="col-span-2 row-span-2 overflow-hidden rounded-xl shadow-lg h-[300px] md:h-[600px] group">
               <img src={fotoUtama} className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-105" alt="Utama" />
             </div>
             {[dataGaleri?.fotoGaleri1, dataGaleri?.fotoGaleri2].map((f, i) => f && (
               <div key={i} className={`overflow-hidden rounded-xl shadow-md h-[145px] md:h-[288px] group`}>
-                <img src={fixGdriveLink(f)} className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-105" alt={`Galeri ${i+1}`} />
+                <img src={fixGdriveLink(f)} className="w-full h-full object-cover transition-transform duration-[3000ms] group-hover:scale-105" alt={`Galeri ${i + 1}`} />
               </div>
             ))}
             {dataGaleri?.fotoGaleri3 && (
@@ -359,20 +366,24 @@ export default function TemaSatuBaruPage() {
         <div className="max-w-3xl mx-auto">
           <h2 className="text-4xl font-serif text-slate-900 mb-6">Wedding Gift</h2>
           <p className="text-slate-500 font-light mb-12">Tanpa mengurangi rasa hormat, bagi Bapak/Ibu/Saudara/i yang ingin memberikan tanda kasih untuk kami, dapat melalui nomor rekening di bawah ini:</p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-              <h4 className="font-bold text-slate-800 text-lg mb-4 bg-slate-100 inline-block px-4 py-1 rounded-full">Bank BCA</h4>
-              <p className="text-slate-900 font-serif text-2xl tracking-widest mb-2">1234 5678 90</p>
-              <p className="text-slate-500 text-sm mb-6 uppercase font-medium">A.N {p.lengkap}</p>
-              <button onClick={() => copyToClipboard('1234567890')} className="bg-slate-900 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors w-full">Salin No. Rekening</button>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
-              <h4 className="font-bold text-slate-800 text-lg mb-4 bg-slate-100 inline-block px-4 py-1 rounded-full">Bank Mandiri</h4>
-              <p className="text-slate-900 font-serif text-2xl tracking-widest mb-2">0987 6543 21</p>
-              <p className="text-slate-500 text-sm mb-6 uppercase font-medium">A.N {w.lengkap}</p>
-              <button onClick={() => copyToClipboard('0987654321')} className="bg-slate-900 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors w-full">Salin No. Rekening</button>
-            </div>
+             {r1 && r1.noRekening && (
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <h4 className="font-bold text-slate-800 text-lg mb-4 bg-slate-100 inline-block px-4 py-1 rounded-full">{r1.bank}</h4>
+                <p className="text-slate-900 font-serif text-2xl tracking-widest mb-2">{r1.noRekening}</p>
+                <p className="text-slate-500 text-sm mb-6 uppercase font-medium">A.N {r1.atasNama}</p>
+                <button onClick={() => copyToClipboard(r1.noRekening)} className="bg-slate-900 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors w-full">Salin No. Rekening</button>
+              </div>
+            )}
+            {r2 && r2.noRekening && (
+              <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100">
+                <h4 className="font-bold text-slate-800 text-lg mb-4 bg-slate-100 inline-block px-4 py-1 rounded-full">{r2.bank}</h4>
+                <p className="text-slate-900 font-serif text-2xl tracking-widest mb-2">{r2.noRekening}</p>
+                <p className="text-slate-500 text-sm mb-6 uppercase font-medium">A.N {r2.atasNama}</p>
+                <button onClick={() => copyToClipboard(r2.noRekening)} className="bg-slate-900 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors w-full">Salin No. Rekening</button>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -384,23 +395,23 @@ export default function TemaSatuBaruPage() {
             <h2 className="text-4xl font-serif text-amber-50 mb-4">Guest Book</h2>
             <div className="w-12 h-1 bg-amber-500 mx-auto"></div>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
             {/* Form RSVP */}
             <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl h-fit">
               <h3 className="font-serif text-2xl mb-6 text-amber-100">Kirim Ucapan & Doa</h3>
               <form onSubmit={submitRSVP} className="space-y-4">
                 <div>
-                  <input type="text" placeholder="Nama Anda" value={formRsvp.nama} onChange={e => setFormRsvp({...formRsvp, nama: e.target.value})} className="w-full px-4 py-3 bg-slate-950 border border-slate-800 text-slate-100 rounded-md focus:outline-none focus:border-amber-500/50" required />
+                  <input type="text" placeholder="Nama Anda" value={formRsvp.nama} onChange={e => setFormRsvp({ ...formRsvp, nama: e.target.value })} className="w-full px-4 py-3 bg-slate-950 border border-slate-800 text-slate-100 rounded-md focus:outline-none focus:border-amber-500/50" required />
                 </div>
                 <div>
-                  <select value={formRsvp.kehadiran} onChange={e => setFormRsvp({...formRsvp, kehadiran: e.target.value})} className="w-full px-4 py-3 bg-slate-950 border border-slate-800 text-slate-100 rounded-md focus:outline-none focus:border-amber-500/50">
+                  <select value={formRsvp.kehadiran} onChange={e => setFormRsvp({ ...formRsvp, kehadiran: e.target.value })} className="w-full px-4 py-3 bg-slate-950 border border-slate-800 text-slate-100 rounded-md focus:outline-none focus:border-amber-500/50">
                     <option value="Hadir">Akan Hadir</option>
                     <option value="Tidak Hadir">Tidak Bisa Hadir</option>
                   </select>
                 </div>
                 <div>
-                  <textarea placeholder="Tuliskan pesan manis untuk kami..." value={formRsvp.ucapan} onChange={e => setFormRsvp({...formRsvp, ucapan: e.target.value})} className="w-full px-4 py-3 bg-slate-950 border border-slate-800 text-slate-100 rounded-md focus:outline-none focus:border-amber-500/50 h-32 resize-none" required></textarea>
+                  <textarea placeholder="Tuliskan pesan manis untuk kami..." value={formRsvp.ucapan} onChange={e => setFormRsvp({ ...formRsvp, ucapan: e.target.value })} className="w-full px-4 py-3 bg-slate-950 border border-slate-800 text-slate-100 rounded-md focus:outline-none focus:border-amber-500/50 h-32 resize-none" required></textarea>
                 </div>
                 <button type="submit" disabled={isSubmitting} className="w-full bg-amber-600 text-slate-950 font-bold uppercase tracking-widest text-sm py-4 rounded-md hover:bg-amber-500 transition-colors disabled:bg-slate-600">
                   {isSubmitting ? "Mengirim..." : "Kirim Ucapan"}

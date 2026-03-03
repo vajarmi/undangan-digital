@@ -21,14 +21,14 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar (Menu Sebelah Kiri) */}
-      <div className="w-64 bg-white shadow-lg relative">
+      <div className="w-64 bg-white shadow-lg relative flex flex-col">
         <div className="p-6 border-b border-gray-100">
           <h2 className="text-2xl font-extrabold text-indigo-600">UndanganSaaS</h2>
           <p className="text-xs text-gray-500 mt-1">Panel Pelanggan</p>
         </div>
         
-        <nav className="mt-6">
-          <a href="#" className="block py-3 px-6 text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600 font-semibold">
+        <nav className="mt-6 flex-1 overflow-y-auto">
+          <a href="/dashboard" className="block py-3 px-6 text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600 font-semibold">
             Beranda
           </a>
           <a href="/dashboard/mempelai" className="block py-3 px-6 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition">
@@ -40,13 +40,16 @@ export default function DashboardPage() {
           <a href="/dashboard/galeri" className="block py-3 px-6 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition">
             Galeri Foto
           </a>
+          <a href="/dashboard/kado" className="block py-3 px-6 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition flex items-center justify-between">
+            Amplop Digital <span className="bg-amber-100 text-amber-600 text-[10px] px-2 py-0.5 rounded-full font-bold">NEW</span>
+          </a>
           <a href="/dashboard/tema" className="block py-3 px-6 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition">
             Pilih Tema
           </a>
         </nav>
 
         {/* Tombol Logout di paling bawah Sidebar */}
-        <div className="absolute bottom-0 w-full p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100">
           <button
             onClick={handleLogout}
             className="w-full flex justify-center py-2 px-4 border border-red-200 text-sm font-medium rounded-md text-red-600 bg-red-50 hover:bg-red-100 transition duration-150"
@@ -70,21 +73,25 @@ export default function DashboardPage() {
           <ul className="space-y-4 text-gray-600">
             <li className="flex items-center">
               <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-4 font-bold">1</span>
-              Isi Data Mempelai Pria & Wanita pada menu samping.
+              Isi <b>Data Mempelai</b> Pria & Wanita pada menu samping.
             </li>
             <li className="flex items-center">
               <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-4 font-bold">2</span>
-              Tentukan Lokasi & Waktu Acara (Akad & Resepsi).
+              Tentukan Lokasi & Waktu pada <b>Detail Acara</b>.
             </li>
             <li className="flex items-center">
               <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-4 font-bold">3</span>
-              Unggah Foto Prewedding dan Pilih Tema Undangan.
+              Isi nomor rekening pada menu <b>Amplop Digital</b>.
+            </li>
+            <li className="flex items-center">
+              <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mr-4 font-bold">4</span>
+              Unggah foto di <b>Galeri</b> dan Pilih <b>Tema</b> Undangan.
             </li>
           </ul>
           
           <div className="mt-8 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
             <p className="text-sm text-yellow-800">
-              <strong>Info:</strong> Link undangan Anda baru bisa dibagikan setelah Anda melengkapi ketiga langkah di atas.
+              <strong>Info:</strong> Link undangan Anda baru bisa dibagikan setelah Anda melengkapi langkah-langkah di atas.
             </p>
           </div>
         </div>
